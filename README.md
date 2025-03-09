@@ -1,53 +1,20 @@
-GoCLI - Fetch Logs from MongoDB
+# GoCLI - MongoDB Log Fetcher
 
-Overview
+GoCLI is a **command-line tool and API** for fetching logs from a **MongoDB database**.  
+It supports **both CLI-based** log retrieval and a **REST API** for fetching logs via HTTP.
 
-GoCLI is a command-line and API-based tool for fetching logs from MongoDB. It allows users to retrieve logs using both CLI commands and a RESTful API.
+## 📌 Features
+✔ Fetch logs via **CLI commands**  
+✔ Start an **API server** to fetch logs via HTTP  
+✔ Supports **dynamic MongoDB database and collection selection**  
+✔ Proper **error handling** for missing parameters  
+✔ Provides **detailed help messages**  
 
-Prerequisites
+---
 
-Go (latest version)
+## 🚀 Installation
 
-MongoDB running on mongodb://localhost:27017
-
-Installation
-
-Clone the repository and initialize the Go module:
-
-git clone <repo-url>
+1️⃣ **Clone the repository**  
+```sh
+git clone https://github.com/your-username/gocli.git
 cd gocli
-go mod tidy
-
-Usage
-
-Run CLI to Fetch Logs
-
-go run main.go logs --db=myDatabase --collection=myCollection
-
-This will fetch and pretty-print logs from the specified database and collection.
-
-Start API Server
-
-go run main.go api --db=myDatabase --collection=myCollection
-
-The API will be available at:
-
-http://localhost:8080/logs
-
-You can fetch logs via an HTTP GET request.
-
-Features
-
-Fetch logs from MongoDB using CLI.
-
-Start a REST API to retrieve logs.
-
-Pretty-print logs in JSON format.
-
-License
-
-This project is licensed under the MIT License.
-
-Contributing
-
-Feel free to open issues or contribute via pull requests!
