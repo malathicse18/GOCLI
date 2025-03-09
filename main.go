@@ -1,0 +1,115 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/cobra"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+var (
+	dbName         string
+	collectionName string
+)
+
+var rootCmd = &cobra.Command{
+	Use:   "gocli",
+	Short: "CLI tool to fetch logs from MongoDB",
+}
+
+var logCmd = &cobra.Command{
+	Use:   "logs",
+	Short: "Fetch logs from the database",
+	Run: func(cmd *cobra.Command, args []string) {
+		fetchLogs()
+	},
+}
+
+func connectDB() (*mongo.Client, context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return client, ctx, cancel
+}
+
+func fetchLogs() {
+	client, ctx, cancel := connectDB()
+	defer cancel()
+	defer client.Disconnect(ctx)
+
+	collection := client.Database(dbName).Collection(collectionName)
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cursor.Close(ctx)
+
+	var logs []bson.M
+	if err := cursor.All(ctx, &logs); err != nil {
+		log.Fatal(err)
+	}
+
+	prettyLogs, err := json.MarshalIndent(logs, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(prettyLogs))
+}
+
+func fetchLogsAPI(c *gin.Context) {
+	client, ctx, cancel := connectDB()
+	defer cancel()
+	defer client.Disconnect(ctx)
+
+	collection := client.Database(dbName).Collection(collectionName)
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var logs []bson.M
+	if err := cursor.All(ctx, &logs); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, logs)
+}
+
+func startAPI() {
+	r := gin.Default()
+	r.GET("/logs", fetchLogsAPI)
+	r.Run(":8080")
+}
+
+var apiCmd = &cobra.Command{
+	Use:   "api",
+	Short: "Start the log fetching API",
+	Run: func(cmd *cobra.Command, args []string) {
+		startAPI()
+	},
+}
+
+func main() {
+	rootCmd.PersistentFlags().StringVar(&dbName, "db", "logDB", "Database name")
+	rootCmd.PersistentFlags().StringVar(&collectionName, "collection", "logs", "Collection name")
+	rootCmd.AddCommand(logCmd, apiCmd)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
