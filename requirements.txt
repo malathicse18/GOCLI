@@ -1,0 +1,4 @@
+gin-gonic/gin
+github.com/spf13/cobra
+go.mongodb.org/mongo-driver
+github.com/joho/godotenv
